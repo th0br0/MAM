@@ -1,5 +1,7 @@
-#![feature(start)]
 #![feature(alloc)]
+#![feature(global_allocator)]
+#![feature(allocator_api)]
+#![feature(start)]
 #![feature(lang_items)]
 #![feature(link_args)]
 #![no_std]
@@ -17,6 +19,11 @@ extern crate iota_trytes;
 extern crate iota_curl_cpu;
 extern crate iota_curl;
 extern crate iota_sign;
+
+mod stub_alloc;
+use stub_alloc::StubAlloc;
+#[global_allocator]
+static ALLOCATOR: StubAlloc = StubAlloc;
 
 #[cfg(not(test))]
 #[lang = "eh_personality"]

@@ -8,6 +8,7 @@ keywords = ["no_std"]
 path = "src/lib.rs"
 test = true
 doc = true
+crate-type = ["staticlib"]
 
 [[bin]]
 name = "iota-mam"
@@ -26,11 +27,14 @@ cty = { git = "https://github.com/japaric/cty.git" }
 
 [dependencies.iota-sign]
 git = "https://github.com/iotaledger/iota.rs"
+
 [dependencies.iota-trytes]
 git = "https://github.com/iotaledger/iota.rs"
 features = ["alloc"]
+
 [dependencies.iota-curl]
 git = "https://github.com/iotaledger/iota.rs"
+
 [dependencies.iota-curl-cpu]
 git = "https://github.com/iotaledger/iota.rs"
 
