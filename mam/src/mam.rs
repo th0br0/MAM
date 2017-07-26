@@ -42,46 +42,51 @@ where
 
     let mut digest = vec![0; iss::DIGEST_LENGTH];
     let mut address = vec![0; iss::ADDRESS_LENGTH];
+    let mut key_space = vec![0; security as usize * iss::KEY_LENGTH];
 
     // generate the key and the get the merkle tree hashes
     let (key, siblings, root) = {
-        let key: Vec<Trit>;
-        let addresses: Vec<Vec<Trit>>;
-        {
-            let keys = merkle::keys(seed, start, count, security, curl1);
-            curl1.reset();
+        let mut key: Vec<Trit> = Vec::new();
+        let addresses: Vec<Vec<Trit>> = (start..start + count)
+            .map(|i| {
+                merkle::key(seed, i, &mut key_space, curl1);
+                curl1.reset();
 
-            key = keys[index].clone();
-            addresses = keys.iter()
-                .map(|ref k| {
-                    iss::digest_key::<Trit, C>(&k, &mut digest, curl1, curl2);
-                    curl1.reset();
-                    curl2.reset();
-                    iss::address::<Trit, C>(&digest, &mut address, curl1);
-                    curl1.reset();
-                    address.clone()
-                })
-                .collect();
-        }
+                if i == index+1 {
+                    key = key_space.to_vec();
+                }
+
+                iss::digest_key::<Trit, C>(&key_space, &mut digest, curl1, curl2);
+                curl1.reset();
+                curl2.reset();
+                iss::address::<Trit, C>(&digest, &mut address, curl1);
+                curl1.reset();
+                address.clone()
+            })
+            .collect();
+
         let siblings = merkle::siblings(&addresses, index, curl1);
         curl1.reset();
         let root = merkle::root(&addresses[index], &siblings, index, curl1);
         curl1.reset();
         (key, siblings, root)
     };
+
+
     let next = {
-        let next_addrs: Vec<Vec<Trit>> =
-            merkle::keys(seed, next_start, next_count, security, curl1)
-                .iter()
-                .map(|ref key| {
-                    curl1.reset();
-                    curl2.reset();
-                    iss::digest_key::<Trit, C>(&key, &mut digest, curl1, curl2);
-                    curl1.reset();
-                    iss::address::<Trit, C>(&digest, &mut address, curl1);
-                    address.clone()
-                })
-                .collect();
+        let next_addrs: Vec<Vec<Trit>> = (next_start..next_start + next_count)
+            .map(|i| {
+                merkle::key(seed, i, &mut key_space, curl1);
+                curl1.reset();
+
+                iss::digest_key::<Trit, C>(&key_space, &mut digest, curl1, curl2);
+                curl1.reset();
+                curl2.reset();
+                iss::address::<Trit, C>(&digest, &mut address, curl1);
+                curl1.reset();
+                address.clone()
+            })
+            .collect();
         curl1.reset();
         curl2.reset();
         merkle::root(

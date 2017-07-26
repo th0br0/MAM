@@ -8,9 +8,12 @@
 #![feature(core_intrinsics)]
 #![crate_type = "staticlib"]
 
+#[macro_use]
 extern crate alloc;
+
 extern crate cty;
 
+extern crate iota_sign;
 extern crate iota_mam;
 extern crate iota_merkle;
 extern crate iota_trytes;

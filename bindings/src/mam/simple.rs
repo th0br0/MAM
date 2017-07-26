@@ -73,11 +73,13 @@ pub fn mam_parse(c_payload: *const c_char, c_root: *const c_char, index: usize) 
     let result = parse::<CpuCurl<Trit>>(&payload, &root, index, &mut c1, &mut c2);
     let (message, next_root) = result.ok().unwrap();
 
-    let mut out_str = trits_to_string(message.as_slice()).unwrap();
-    out_str.push('\n');
-    out_str.push_str(trits_to_string(next_root.as_slice()).unwrap().as_str());
-    out_str.push('\0');
+    let payload_str = {
+        let mut out_str = trits_to_string(&message).unwrap();
+        out_str.push('\n');
+        out_str.push_str(&trits_to_string(&next_root).unwrap().as_str());
+        out_str.push('\0');
+        Box::new(out_str)
+    };
 
-    let out_box = Box::new(out_str);
-    &out_box.as_bytes()[0] as *const u8
+    payload_str.as_bytes()[0] as *const u8
 }
