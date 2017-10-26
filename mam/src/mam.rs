@@ -15,6 +15,11 @@ pub fn id<C: Curl<Trit>>(side_key: &[Trit], root: &[Trit], out: &mut [Trit], c: 
     c.reset();
 }
 
+/// Returns the leaf index for the current payload.
+pub fn index(payload: &[Trit]) -> usize {
+    pascal::decode(payload).0 as usize
+}
+
 pub fn min_length(
     message_length: usize,
     siblings_length: usize,

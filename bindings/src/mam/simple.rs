@@ -22,6 +22,16 @@ pub fn iota_mam_id(key: &CTrits, root: &CTrits) -> *const CTrits {
 }
 
 #[no_mangle]
+pub fn iota_mam_index(payload: &CTrits) -> usize {
+    if payload.encoding == TritEncoding::TRIT {
+        iota_mam::index(ctrits_slice_trits(payload))
+    } else {
+        let ctrits= ctrits_convert(payload, TritEncoding::TRIT);
+        iota_mam::index(ctrits_slice_trits(&ctrits))
+    }
+}
+
+#[no_mangle]
 pub fn iota_mam_create(
     seed: &CTrits,
     message: &CTrits,
