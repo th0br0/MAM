@@ -26,10 +26,10 @@ pub fn min_length(
     index: usize,
     security: usize,
 ) -> usize {
-    pascal::encoded_length(index as isize) +
-        pascal::encoded_length((HASH_LENGTH + message_length) as isize) + HASH_LENGTH +
-        message_length + MESSAGE_NONCE_LENGTH + security as usize * iss::KEY_LENGTH +
-        pascal::encoded_length((siblings_length / HASH_LENGTH) as isize) + siblings_length
+    pascal::encoded_length(index as isize)
+        + pascal::encoded_length((HASH_LENGTH + message_length) as isize) + HASH_LENGTH
+        + message_length + MESSAGE_NONCE_LENGTH + security as usize * iss::KEY_LENGTH
+        + pascal::encoded_length((siblings_length / HASH_LENGTH) as isize) + siblings_length
 }
 
 /// Creates a signed, encrypted payload from a `message`,
@@ -75,9 +75,9 @@ where
     let siblings_count = (siblings.len() / HASH_LENGTH) as isize;
     let siblings_pascal_length = pascal::encoded_length(siblings_count);
     let signature_length = security as usize * iss::KEY_LENGTH;
-    let payload_min_length = message_p + HASH_LENGTH + message_length + MESSAGE_NONCE_LENGTH +
-        signature_length +
-        siblings_pascal_length + siblings_length + index_p;
+    let payload_min_length = message_p + HASH_LENGTH + message_length + MESSAGE_NONCE_LENGTH
+        + signature_length + siblings_pascal_length + siblings_length
+        + index_p;
 
     let next_root_start = index_p + message_p;
     let next_end = next_root_start + next.len();
@@ -102,10 +102,10 @@ where
         &mut payload[index_p..next_root_start],
     );
     encr_curl.absorb(&payload[..next_root_start]);
-    payload[next_root_start..next_end].clone_from_slice(&next);
-    payload[next_end..message_end].clone_from_slice(&message);
+    payload[next_root_start..next_end].clone_from_slice(next);
+    payload[next_end..message_end].clone_from_slice(message);
     mask_slice(&mut payload[next_root_start..message_end], encr_curl);
-    curl.state_mut().clone_from_slice(&encr_curl.state());
+    curl.state_mut().clone_from_slice(encr_curl.state());
     H::search(security, 0, HASH_LENGTH / 3, curl, bcurl).unwrap();
     payload[message_end..nonce_end].clone_from_slice(&curl.rate()[..MESSAGE_NONCE_LENGTH]);
     mask_slice(&mut payload[message_end..nonce_end], encr_curl);
@@ -125,7 +125,7 @@ where
     );
     curl.reset();
     iss::signature(
-        &encr_curl.rate(),
+        encr_curl.rate(),
         &mut payload[nonce_end..signature_end],
         curl,
     );
@@ -134,7 +134,7 @@ where
         siblings_count,
         &mut payload[signature_end..siblings_pascal_end],
     );
-    payload[siblings_pascal_end..siblings_end].clone_from_slice(&siblings);
+    payload[siblings_pascal_end..siblings_end].clone_from_slice(siblings);
     mask_slice(&mut payload[nonce_end..siblings_end], encr_curl);
     encr_curl.reset();
     payload_min_length
@@ -151,7 +151,7 @@ where
 /// Then checks that the signature is valid and with sibling hashes in the payload
 /// resolves to the merkle `root`.
 ///
-/// Returns the `message` contained therein if valid, or a MamError if invalid
+/// Returns the `message` contained therein if valid, or a `MamError` if invalid
 pub fn parse<C>(
     payload: &mut [Trit],
     side_key: &[Trit],
@@ -162,7 +162,7 @@ where
     C: Curl<Trit>,
 {
     let (index, message_length, next_root_start) = {
-        let (index, index_end) = pascal::decode(&payload);
+        let (index, index_end) = pascal::decode(payload);
         let (message_length, message_length_end) = pascal::decode(&payload[index_end..]);
         (
             index as usize,
@@ -188,13 +188,13 @@ where
     unmask_slice(&mut payload[pos..pos + MESSAGE_NONCE_LENGTH], curl);
     pos += HASH_LENGTH / 3;
     let mut hmac: [Trit; HASH_LENGTH] = [0; HASH_LENGTH];
-    hmac.clone_from_slice(&curl.rate());
+    hmac.clone_from_slice(curl.rate());
     let security = iss::checksum_security(&hmac);
     unmask_slice(&mut payload[pos..], curl);
     if security != 0 {
         let sig_end = pos + security * iss::KEY_LENGTH;
         iss::digest_bundle_signature(&hmac, &mut payload[pos..sig_end], curl);
-        hmac.clone_from_slice(&curl.rate());
+        hmac.clone_from_slice(curl.rate());
         curl.reset();
         pos = sig_end;
         let l = pascal::decode(&payload[pos..]);
@@ -236,8 +236,7 @@ mod tests {
             .flat_map(char_to_trits)
             .cloned()
             .collect();
-        let message: Vec<Trit> =
-            "D9999999JDLILILID9999999D9999999GC999999FB999999EA999999D9999999YELILILIGGOFQGHCMCOC9999WAFEA999UA999999JHTB9999VFLILILIFGOFQGHCCCOC9999ABFEA999UA999999WGSB9999SGLILILIEGOFQGHCTBOC99999BFEA999UA999999WGSB9999PHLILILIDGOFQGHCJBOC9999ZAFEA999VA999999WGSB9999N999X999D999H999L999P999T999F999H999D999"
+        let message: Vec<Trit> = "D9999999JDLILILID9999999D9999999GC999999FB999999EA999999D9999999YELILILIGGOFQGHCMCOC9999WAFEA999UA999999JHTB9999VFLILILIFGOFQGHCCCOC9999ABFEA999UA999999WGSB9999SGLILILIEGOFQGHCTBOC99999BFEA999UA999999WGSB9999PHLILILIDGOFQGHCJBOC9999ZAFEA999VA999999WGSB9999N999X999D999H999L999P999T999F999H999D999"
             .chars()
             .flat_map(char_to_trits)
             .cloned()
@@ -315,36 +314,28 @@ mod tests {
         let pstr = trits_to_string(&payload).unwrap();
         c1.reset();
 
-        let mut payload : Vec<Trit>= pstr
-            .chars()
-            .flat_map(char_to_trits)
-            .cloned()
-            .collect();
+        let mut payload: Vec<Trit> = pstr.chars().flat_map(char_to_trits).cloned().collect();
 
 
         match parse(&mut payload, &side_key, &root_trits, &mut c1) {
-            Ok((s, len)) => {
-                assert_eq!(
-                    trits_to_string(&payload[s + HASH_LENGTH..len]),
-                    trits_to_string(&message)
-                )
-            }
-            Err(e) => {
-                match e {
-                    MamError::InvalidSignature => panic!("Invalid Signature"),
-                    MamError::InvalidHash => panic!("Invalid Hash"),
-                    MamError::ArrayOutOfBounds => panic!("Array Out of Bounds"),
-                    _ => panic!("Some error!"),
-                }
-            }
+            Ok((s, len)) => assert_eq!(
+                trits_to_string(&payload[s + HASH_LENGTH..len]),
+                trits_to_string(&message)
+            ),
+            Err(e) => match e {
+                MamError::InvalidSignature => panic!("Invalid Signature"),
+                MamError::InvalidHash => panic!("Invalid Hash"),
+                MamError::ArrayOutOfBounds => panic!("Array Out of Bounds"),
+                _ => panic!("Some error!"),
+            },
         }
     }
 
     #[test]
     fn it_works() {
         let seed: Vec<Trit> = "ABCDEFGHIJKLMNOPQRSTUVWXYZ9\
-                             ABCDEFGHIJKLMNOPQRSTUVWXYZ9\
-                             ABCDEFGHIJKLMNOPQRSTUVWXYZ9"
+                               ABCDEFGHIJKLMNOPQRSTUVWXYZ9\
+                               ABCDEFGHIJKLMNOPQRSTUVWXYZ9"
             .chars()
             .flat_map(char_to_trits)
             .cloned()
@@ -428,20 +419,16 @@ mod tests {
             c1.reset();
 
             match parse(&mut payload, &side_key, &root_trits, &mut c1) {
-                Ok((s, len)) => {
-                    assert_eq!(
-                        trits_to_string(&payload[s + HASH_LENGTH..len]),
-                        trits_to_string(&message)
-                    )
-                }
-                Err(e) => {
-                    match e {
-                        MamError::InvalidSignature => panic!("Invalid Signature"),
-                        MamError::InvalidHash => panic!("Invalid Hash"),
-                        MamError::ArrayOutOfBounds => panic!("Array Out of Bounds"),
-                        _ => panic!("Some error!"),
-                    }
-                }
+                Ok((s, len)) => assert_eq!(
+                    trits_to_string(&payload[s + HASH_LENGTH..len]),
+                    trits_to_string(&message)
+                ),
+                Err(e) => match e {
+                    MamError::InvalidSignature => panic!("Invalid Signature"),
+                    MamError::InvalidHash => panic!("Invalid Hash"),
+                    MamError::ArrayOutOfBounds => panic!("Array Out of Bounds"),
+                    _ => panic!("Some error!"),
+                },
             }
         }
     }

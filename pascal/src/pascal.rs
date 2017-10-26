@@ -12,25 +12,23 @@ fn end(trits: &[Trit]) -> usize {
 }
 
 pub fn decode(input: &[Trit]) -> (isize, usize) {
-    if &input[..4] == &ZERO {
+    if input[..4] == ZERO {
         (0, 4)
     } else {
         let encoders_start = end(input);
-        let input_end = encoders_start +
-            pascal_min_trits(2usize.pow((encoders_start / TRITS_PER_TRYTE) as u32) - 1);
+        let input_end = encoders_start
+            + pascal_min_trits(2usize.pow((encoders_start / TRITS_PER_TRYTE) as u32) - 1);
         let encoder = num::trits2int(&input[encoders_start..input_end]) as isize;
         (
             input[..encoders_start]
                 .chunks(TRITS_PER_TRYTE)
                 .enumerate()
                 .fold(0, |acc, (i, tryte)| {
-                    acc +
-                        27_isize.pow(i as u32) *
-                            if ((encoder >> i) & 1_isize) != 0_isize {
-                                (-num::trits2int(tryte)) as isize
-                            } else {
-                                num::trits2int(tryte) as isize
-                            }
+                    acc + 27_isize.pow(i as u32) * if ((encoder >> i) & 1_isize) != 0_isize {
+                        (-num::trits2int(tryte)) as isize
+                    } else {
+                        num::trits2int(tryte) as isize
+                    }
                 }),
             input_end,
         )

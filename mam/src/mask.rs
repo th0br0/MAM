@@ -58,10 +58,10 @@ where
     C: Curl<Trit>,
 {
     for chunk in payload.chunks_mut(HASH_LENGTH) {
-        for i in 0..chunk.len() {
-            chunk[i] = trit_sum(chunk[i], -curl.rate()[i]);
+        for (i, pos) in chunk.iter_mut().enumerate() {
+            *pos = trit_sum(*pos, -curl.rate()[i]);
         }
-        curl.absorb(&chunk);
+        curl.absorb(chunk);
     }
 }
 
